@@ -13,7 +13,7 @@ Herdr routes all keyboard input to an open popup pane before consulting its dire
 To provide a smooth, toggled experience:
 
 1. **Ghostty** rewrites `cmd+p` into `alt+p` escape bytes (`\x1bp`).
-2. **Herdr** binds `alt+p` and `cmd+p` to `codaveto.quick-actions.open`.
+2. **Herdr** binds `alt+p` and `cmd+p` to `appboypov.quick-actions.open`.
 3. **fzf** in the popup binds `alt-p:abort` and `ctrl-alt-p:abort`.
 
 The result:
@@ -78,19 +78,19 @@ Reload Ghostty with `cmd+shift+,`.
 [[keys.command]]
 key = "cmd+p"
 type = "plugin_action"
-command = "codaveto.quick-actions.open"
+command = "appboypov.quick-actions.open"
 description = "quick actions"
 
 [[keys.command]]
 key = "alt+p"
 type = "plugin_action"
-command = "codaveto.quick-actions.open"
+command = "appboypov.quick-actions.open"
 description = "quick actions"
 
 [[keys.command]]
 key = "ctrl+alt+p"
 type = "plugin_action"
-command = "codaveto.quick-actions.open"
+command = "appboypov.quick-actions.open"
 description = "quick actions"
 ```
 

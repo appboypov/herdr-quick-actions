@@ -40,7 +40,7 @@ mv "$TMP_TARGET" "$TARGET_FILE"
 
 # Open popup pane
 HERDR="${HERDR_BIN_PATH:-herdr}"
-PLUGIN_ID="${HERDR_PLUGIN_ID:-codaveto.quick-actions}"
+PLUGIN_ID="${HERDR_PLUGIN_ID:-appboypov.quick-actions}"
 
 if ! OUT=$("$HERDR" plugin pane open --plugin "$PLUGIN_ID" --entrypoint actions 2>&1); then
     if printf '%s' "$OUT" | grep -q -E "ui_busy|popup already open"; then
