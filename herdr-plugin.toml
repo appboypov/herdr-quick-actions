@@ -1,5 +1,5 @@
-id = "codaveto.pane-actions"
-name = "Herdr Pane Actions"
+id = "codaveto.quick-actions"
+name = "Herdr Quick Actions"
 version = "0.1.0"
 min_herdr_version = "0.8.0"
 description = "Contextual quick actions menu for the active Herdr pane."
@@ -7,13 +7,13 @@ platforms = ["macos", "linux"]
 
 [[actions]]
 id = "open"
-title = "Pane Actions"
+title = "Quick Actions"
 contexts = ["workspace"]
 command = ["bash", "bin/open-picker.sh"]
 
 [[panes]]
 id = "actions"
-title = "Pane Actions"
+title = "Quick Actions"
 placement = "popup"
 width = "60%"
 height = "50%"

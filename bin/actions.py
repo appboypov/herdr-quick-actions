@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Contextual actions catalogue generator for Herdr pane-actions.
+Contextual actions catalogue generator for Herdr quick-actions.
 Usage: actions.py <target-pane-id>
 Outputs tab-delimited rows: <spec-json>\t<mode>\t<display>
 Outputs header text on stderr.

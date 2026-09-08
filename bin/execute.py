@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Execution dispatcher for Herdr pane-actions.
+Execution dispatcher for Herdr quick-actions.
 Reads a single JSON action spec from stdin, optional --input <text>.
 Executes the corresponding Herdr CLI or socket API call.
 

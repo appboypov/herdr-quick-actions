@@ -28,7 +28,7 @@ def find_socket() -> str:
 def call(method: str, params: dict) -> dict:
     sock_path = find_socket()
     req = {
-        "id": f"herdr-pane-actions:{method}",
+        "id": f"herdr-quick-actions:{method}",
         "method": method,
         "params": params,
     }

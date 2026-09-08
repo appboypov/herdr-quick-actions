@@ -5,8 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR="${HERDR_PLUGIN_STATE_DIR:-${TMPDIR:-/tmp}}"
 mkdir -p "$STATE_DIR"
 
-MARKER="$STATE_DIR/pane-actions.open"
-TARGET_FILE="$STATE_DIR/pane-actions.target"
+MARKER="$STATE_DIR/quick-actions.open"
+TARGET_FILE="$STATE_DIR/quick-actions.target"
 
 # Toggle-to-close if popup is already open
 if [ -f "$MARKER" ]; then
@@ -34,13 +34,13 @@ if [ -z "$PANE_ID" ]; then
 fi
 
 # Write target pane atomically
-TMP_TARGET=$(mktemp "$STATE_DIR/pane-actions.target.XXXXXX")
+TMP_TARGET=$(mktemp "$STATE_DIR/quick-actions.target.XXXXXX")
 printf '%s' "$PANE_ID" > "$TMP_TARGET"
 mv "$TMP_TARGET" "$TARGET_FILE"
 
 # Open popup pane
 HERDR="${HERDR_BIN_PATH:-herdr}"
-PLUGIN_ID="${HERDR_PLUGIN_ID:-codaveto.pane-actions}"
+PLUGIN_ID="${HERDR_PLUGIN_ID:-codaveto.quick-actions}"
 
 if ! OUT=$("$HERDR" plugin pane open --plugin "$PLUGIN_ID" --entrypoint actions 2>&1); then
     if printf '%s' "$OUT" | grep -q -E "ui_busy|popup already open"; then

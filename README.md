@@ -1,4 +1,4 @@
-# Herdr Pane Actions
+# Herdr Quick Actions
 
 Modal action palette for the active Herdr pane, bound to `cmd+p`.
 
@@ -13,7 +13,7 @@ Herdr routes all keyboard input to an open popup pane before consulting its dire
 To provide a smooth, toggled experience:
 
 1. **Ghostty** rewrites `cmd+p` into `alt+p` escape bytes (`\x1bp`).
-2. **Herdr** binds `alt+p` and `cmd+p` to `codaveto.pane-actions.open`.
+2. **Herdr** binds `alt+p` and `cmd+p` to `codaveto.quick-actions.open`.
 3. **fzf** in the popup binds `alt-p:abort` and `ctrl-alt-p:abort`.
 
 The result:
@@ -65,7 +65,7 @@ The result:
 ### 1. Ghostty (`~/.config/ghostty/config`)
 
 ```text
-# Herdr pane actions popup toggle: send alt+p bytes so chord survives Herdr's
+# Herdr quick actions popup toggle: send alt+p bytes so chord survives Herdr's
 # legacy encoder and reaches the popup process (super is stripped there).
 keybind = super+p=text:\x1bp
 ```
@@ -78,20 +78,20 @@ Reload Ghostty with `cmd+shift+,`.
 [[keys.command]]
 key = "cmd+p"
 type = "plugin_action"
-command = "codaveto.pane-actions.open"
-description = "pane actions"
+command = "codaveto.quick-actions.open"
+description = "quick actions"
 
 [[keys.command]]
 key = "alt+p"
 type = "plugin_action"
-command = "codaveto.pane-actions.open"
-description = "pane actions"
+command = "codaveto.quick-actions.open"
+description = "quick actions"
 
 [[keys.command]]
 key = "ctrl+alt+p"
 type = "plugin_action"
-command = "codaveto.pane-actions.open"
-description = "pane actions"
+command = "codaveto.quick-actions.open"
+description = "quick actions"
 ```
 
 Reload Herdr config:
@@ -104,7 +104,7 @@ herdr server reload-config
 ## Installation
 
 ```bash
-herdr plugin link /Users/codaveto/Repos/herdr-pane-actions
+herdr plugin link /Users/codaveto/Repos/herdr-quick-actions
 herdr server reload-config
 ```
 
