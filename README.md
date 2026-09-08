@@ -37,13 +37,21 @@ The result:
 | `Create new tab (named...)` | `prompt` | Prompts for a label and creates a fresh focused tab in the current workspace. |
 | `Create new workspace` | `run` | Creates a fresh workspace with focus, inheriting working directory. |
 | `Create new workspace (named...)` | `prompt` | Prompts for a label and creates a fresh focused workspace. |
+| `Create Git worktree space...` | `prompt` | Prompts for a branch name and creates an isolated Git worktree space. |
 | `Rename tab` | `prompt` | Prompts for a new label and renames the active tab. |
 | `Rename workspace` | `prompt` | Prompts for a new label and renames the active workspace. |
 | `Swap left / right / up / down` | `run` | Swaps positions with an adjacent pane in the same tab. |
+| `Resize: widen / narrow / expand / shrink` | `run` | Resizes pane split boundary by 10% in the chosen direction. |
 | `Toggle zoom` | `run` | Toggles zoom state on the target pane via socket API. |
 | `Rename pane` | `prompt` | Prompts for a new pane label in the popup terminal and updates Herdr. |
+| `Launch agent: omp / claude / pi` | `run` | Starts an interactive AI coding agent inside an empty shell pane. |
 | `Agent: interrupt` | `run` | Sends `SIGINT` (`ctrl+c`) to an active agent running in the pane. |
 | `Agent: status & info` | `show` | Displays agent details, session ID, and status. |
+| `Send Ctrl+C (Interrupt)` | `run` | Transmits `ctrl+c` to the active pane. |
+| `Send Ctrl+D (EOF)` | `run` | Transmits `ctrl+d` to exit shells, REPLs, or stdin readers. |
+| `Clear terminal screen` | `run` | Transmits `ctrl+l` to clear the terminal display. |
+| `Copy visible terminal screen` | `show` | Captures visible terminal content and copies to clipboard (`pbcopy`). |
+| `Copy terminal history (last 50 lines)` | `show` | Captures recent terminal history and copies to clipboard. |
 | `Copy pane ID` | `show` | Copies target pane ID to system clipboard (`pbcopy`). |
 | `Copy working directory` | `show` | Copies target pane's working directory to clipboard. |
 | `Close tab` | `confirm` | Prompts confirmation before closing the active tab. |

@@ -92,6 +92,38 @@ def handle_copy(spec: dict, input_text: str | None) -> str:
 
     # Fallback: print to stdout
     return f"Value: {value}"
+def handle_copy_terminal(spec: dict, input_text: str | None) -> str:
+    pane_id = spec["pane"]
+    args = ["pane", "read", pane_id]
+    source = spec.get("source")
+    if source:
+        args.extend(["--source", source])
+    lines = spec.get("lines")
+    if lines:
+        args.extend(["--lines", str(lines)])
+
+    cmd = [HERDR_BIN] + args
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    if p.returncode != 0:
+        raise ExecutionError(f"Failed to read terminal buffer: {p.stderr.strip() or p.stdout.strip()}", code=1)
+
+    content = p.stdout
+    line_count = len(content.splitlines())
+
+    clipboard_cmd = None
+    if shutil.which("pbcopy"):
+        clipboard_cmd = ["pbcopy"]
+    elif shutil.which("wl-copy"):
+        clipboard_cmd = ["wl-copy"]
+    elif shutil.which("xclip"):
+        clipboard_cmd = ["xclip", "-selection", "clipboard"]
+
+    if clipboard_cmd:
+        cp = subprocess.run(clipboard_cmd, input=content, text=True, capture_output=True)
+        if cp.returncode == 0:
+            return f"Copied {line_count} lines of terminal buffer to clipboard"
+
+    return f"Captured {line_count} lines of terminal buffer"
 
 def handle_agent_get(spec: dict, input_text: str | None) -> str:
     pane_id = spec["pane"]
@@ -109,6 +141,18 @@ def handle_agent_keys(spec: dict, input_text: str | None) -> str:
     keys = spec.get("keys", ["ctrl+c"])
     run_herdr(["agent", "send-keys", pane_id] + keys)
     return f"Sent keys {' '.join(keys)} to {pane_id}"
+def handle_agent_start(spec: dict, input_text: str | None) -> str:
+    pane_id = spec["pane"]
+    kind = spec.get("kind", "omp")
+    name = spec.get("name") or kind
+    run_herdr(["agent", "start", name, "--kind", kind, "--pane", pane_id])
+    return f"Launched agent {name} ({kind}) in pane {pane_id}"
+
+def handle_send_keys(spec: dict, input_text: str | None) -> str:
+    pane_id = spec["pane"]
+    keys = spec.get("keys", ["ctrl+c"])
+    run_herdr(["pane", "send-keys", pane_id] + keys)
+    return f"Sent keys {' '.join(keys)} to {pane_id}"
 
 def handle_swap(spec: dict, input_text: str | None) -> str:
     pane_id = spec["pane"]
@@ -116,6 +160,12 @@ def handle_swap(spec: dict, input_text: str | None) -> str:
     run_herdr(["pane", "swap", "--pane", pane_id, "--direction", direction])
     return f"Swapped {pane_id} {direction}"
 
+def handle_resize(spec: dict, input_text: str | None) -> str:
+    pane_id = spec["pane"]
+    direction = spec.get("direction", "right")
+    amount = str(spec.get("amount", 0.1))
+    run_herdr(["pane", "resize", "--pane", pane_id, "--direction", direction, "--amount", amount])
+    return f"Resized split {direction} by {amount}"
 def handle_move_workspace(spec: dict, input_text: str | None) -> str:
     pane_id = spec["pane"]
     target_ws = spec["workspace"]
@@ -175,6 +225,18 @@ def handle_create_workspace(spec: dict, input_text: str | None) -> str:
     res = run_herdr(args)
     ws_info = res.get("result", {}).get("workspace", {})
     return f"Created workspace {ws_info.get('workspace_id', '')} with focus"
+def handle_worktree_create(spec: dict, input_text: str | None) -> str:
+    branch_name = (input_text or "").strip()
+    if not branch_name:
+        raise ExecutionError("Worktree creation cancelled: branch name cannot be empty", code=2)
+    cwd = spec.get("cwd")
+    args = ["worktree", "create", "--branch", branch_name, "--focus"]
+    if cwd:
+        args.extend(["--cwd", cwd])
+    res = run_herdr(args)
+    ws_info = res.get("result", {}).get("workspace", {})
+    ws_id = ws_info.get("workspace_id", "")
+    return f"Created Git worktree space for branch '{branch_name}' (workspace {ws_id})"
 
 def handle_rename_tab(spec: dict, input_text: str | None) -> str:
     tab_id = spec["tab"]
@@ -206,9 +268,13 @@ OPS = {
     "split": handle_split,
     "zoom": handle_zoom,
     "copy": handle_copy,
+    "agent_start": handle_agent_start,
+    "send_keys": handle_send_keys,
+    "copy_terminal": handle_copy_terminal,
     "agent_get": handle_agent_get,
     "agent_keys": handle_agent_keys,
     "swap": handle_swap,
+    "resize": handle_resize,
     "rename": handle_rename,
     "close": handle_close,
     "move_workspace": handle_move_workspace,
@@ -218,6 +284,7 @@ OPS = {
     "create_tab": handle_create_tab,
     "create_workspace": handle_create_workspace,
     "rename_tab": handle_rename_tab,
+    "worktree_create": handle_worktree_create,
     "rename_workspace": handle_rename_workspace,
     "close_tab": handle_close_tab,
     "close_workspace": handle_close_workspace,

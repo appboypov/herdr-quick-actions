@@ -60,6 +60,18 @@ def main():
     # Sibling panes in the same tab
     tab_panes = [p for p in panes if p.get("tab_id") == target_tab_id]
     pane_count = len(tab_panes)
+    # Git repo check for worktree operations
+    is_git_repo = False
+    if target_cwd:
+        try:
+            p = subprocess.run(
+                ["git", "-C", target_cwd, "rev-parse", "--is-inside-work-tree"],
+                capture_output=True,
+                text=True
+            )
+            is_git_repo = (p.returncode == 0 and p.stdout.strip() == "true")
+        except Exception:
+            pass
 
     # Build header string for stderr
     header_parts = [f"pane: {target_pane_id}"]
@@ -158,6 +170,12 @@ def main():
         f"Rename workspace ({ws_display})"
     ))
 
+    if is_git_repo:
+        rows.append((
+            {"op": "worktree_create", "cwd": target_cwd},
+            "prompt:Branch name for worktree",
+            "Create Git worktree space..."
+        ))
     # 6. Swap operations (when tab holds >= 2 panes)
     if pane_count >= 2:
         rows.append((
@@ -179,6 +197,26 @@ def main():
             {"op": "swap", "pane": target_pane_id, "direction": "down"},
             "run",
             "Swap down"
+        ))
+        rows.append((
+            {"op": "resize", "pane": target_pane_id, "direction": "right", "amount": 0.1},
+            "run",
+            "Resize: widen split (+10%)"
+        ))
+        rows.append((
+            {"op": "resize", "pane": target_pane_id, "direction": "left", "amount": 0.1},
+            "run",
+            "Resize: narrow split (-10%)"
+        ))
+        rows.append((
+            {"op": "resize", "pane": target_pane_id, "direction": "down", "amount": 0.1},
+            "run",
+            "Resize: expand height (+10%)"
+        ))
+        rows.append((
+            {"op": "resize", "pane": target_pane_id, "direction": "up", "amount": 0.1},
+            "run",
+            "Resize: shrink height (-10%)"
         ))
 
     # 7. Zoom toggle
@@ -207,6 +245,39 @@ def main():
             "show",
             f"Agent: status & info ({agent_name})"
         ))
+    else:
+        rows.append((
+            {"op": "agent_start", "pane": target_pane_id, "kind": "omp"},
+            "run",
+            "Launch agent: omp"
+        ))
+        rows.append((
+            {"op": "agent_start", "pane": target_pane_id, "kind": "claude"},
+            "run",
+            "Launch agent: claude"
+        ))
+        rows.append((
+            {"op": "agent_start", "pane": target_pane_id, "kind": "pi"},
+            "run",
+            "Launch agent: pi"
+        ))
+
+    # Process control signals
+    rows.append((
+        {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+c"]},
+        "run",
+        "Send Ctrl+C (Interrupt)"
+    ))
+    rows.append((
+        {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+d"]},
+        "run",
+        "Send Ctrl+D (EOF)"
+    ))
+    rows.append((
+        {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+l"]},
+        "run",
+        "Clear terminal screen"
+    ))
 
     # 10. Copy utilities
     rows.append((
@@ -220,6 +291,16 @@ def main():
             "show",
             f"Copy working directory ({target_cwd})"
         ))
+    rows.append((
+        {"op": "copy_terminal", "pane": target_pane_id, "source": "visible"},
+        "show",
+        "Copy visible terminal screen"
+    ))
+    rows.append((
+        {"op": "copy_terminal", "pane": target_pane_id, "lines": 50},
+        "show",
+        "Copy terminal history (last 50 lines)"
+    ))
 
     # 11. Close pane
     rows.append((
