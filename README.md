@@ -33,6 +33,12 @@ The result:
 | `Move to new tab` | `run` | Moves pane into a newly created tab in the current workspace. |
 | `Move to workspace: <ws>` | `run` | Moves pane into a newly created tab in the target workspace and switches focus. |
 | `Move to new workspace` | `run` | Creates a fresh workspace containing only the moved pane and focuses it. |
+| `Create new tab` | `run` | Creates a fresh tab in the current workspace with focus, inheriting working directory. |
+| `Create new tab (named...)` | `prompt` | Prompts for a label and creates a fresh focused tab in the current workspace. |
+| `Create new workspace` | `run` | Creates a fresh workspace with focus, inheriting working directory. |
+| `Create new workspace (named...)` | `prompt` | Prompts for a label and creates a fresh focused workspace. |
+| `Rename tab` | `prompt` | Prompts for a new label and renames the active tab. |
+| `Rename workspace` | `prompt` | Prompts for a new label and renames the active workspace. |
 | `Swap left / right / up / down` | `run` | Swaps positions with an adjacent pane in the same tab. |
 | `Toggle zoom` | `run` | Toggles zoom state on the target pane via socket API. |
 | `Rename pane` | `prompt` | Prompts for a new pane label in the popup terminal and updates Herdr. |
@@ -40,6 +46,8 @@ The result:
 | `Agent: status & info` | `show` | Displays agent details, session ID, and status. |
 | `Copy pane ID` | `show` | Copies target pane ID to system clipboard (`pbcopy`). |
 | `Copy working directory` | `show` | Copies target pane's working directory to clipboard. |
+| `Close tab` | `confirm` | Prompts confirmation before closing the active tab. |
+| `Close workspace` | `confirm` | Prompts confirmation before closing the active workspace. |
 | `Close pane` | `confirm` | Prompts confirmation before closing the pane. |
 
 ---

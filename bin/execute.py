@@ -149,6 +149,58 @@ def handle_close(spec: dict, input_text: str | None) -> str:
     pane_id = spec["pane"]
     run_herdr(["pane", "close", pane_id])
     return f"Closed pane {pane_id}"
+def handle_create_tab(spec: dict, input_text: str | None) -> str:
+    args = ["tab", "create", "--focus"]
+    ws = spec.get("workspace")
+    if ws:
+        args.extend(["--workspace", ws])
+    cwd = spec.get("cwd")
+    if cwd:
+        args.extend(["--cwd", cwd])
+    label = (input_text or "").strip()
+    if label:
+        args.extend(["--label", label])
+    res = run_herdr(args)
+    tab_info = res.get("result", {}).get("tab", {})
+    return f"Created tab {tab_info.get('tab_id', '')} with focus"
+
+def handle_create_workspace(spec: dict, input_text: str | None) -> str:
+    args = ["workspace", "create", "--focus"]
+    cwd = spec.get("cwd")
+    if cwd:
+        args.extend(["--cwd", cwd])
+    label = (input_text or "").strip()
+    if label:
+        args.extend(["--label", label])
+    res = run_herdr(args)
+    ws_info = res.get("result", {}).get("workspace", {})
+    return f"Created workspace {ws_info.get('workspace_id', '')} with focus"
+
+def handle_rename_tab(spec: dict, input_text: str | None) -> str:
+    tab_id = spec["tab"]
+    new_label = (input_text or "").strip()
+    if not new_label:
+        raise ExecutionError("Rename cancelled: new tab label cannot be empty", code=2)
+    run_herdr(["tab", "rename", tab_id, new_label])
+    return f"Renamed tab {tab_id} to '{new_label}'"
+
+def handle_rename_workspace(spec: dict, input_text: str | None) -> str:
+    ws_id = spec["workspace"]
+    new_label = (input_text or "").strip()
+    if not new_label:
+        raise ExecutionError("Rename cancelled: new workspace label cannot be empty", code=2)
+    run_herdr(["workspace", "rename", ws_id, new_label])
+    return f"Renamed workspace {ws_id} to '{new_label}'"
+
+def handle_close_tab(spec: dict, input_text: str | None) -> str:
+    tab_id = spec["tab"]
+    run_herdr(["tab", "close", tab_id])
+    return f"Closed tab {tab_id}"
+
+def handle_close_workspace(spec: dict, input_text: str | None) -> str:
+    ws_id = spec["workspace"]
+    run_herdr(["workspace", "close", ws_id])
+    return f"Closed workspace {ws_id}"
 
 OPS = {
     "split": handle_split,
@@ -163,6 +215,12 @@ OPS = {
     "move_tab": handle_move_tab,
     "new_workspace": handle_new_workspace,
     "new_tab": handle_new_tab,
+    "create_tab": handle_create_tab,
+    "create_workspace": handle_create_workspace,
+    "rename_tab": handle_rename_tab,
+    "rename_workspace": handle_rename_workspace,
+    "close_tab": handle_close_tab,
+    "close_workspace": handle_close_workspace,
 }
 
 def main():

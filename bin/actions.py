@@ -126,6 +126,37 @@ def main():
         "run",
         "Move to new workspace"
     ))
+    # 6. Tab & Workspace management
+    rows.append((
+        {"op": "create_tab", "workspace": target_ws_id, **split_cwd_arg},
+        "run",
+        "Create new tab"
+    ))
+    rows.append((
+        {"op": "create_tab", "workspace": target_ws_id, **split_cwd_arg},
+        "prompt:New tab label",
+        "Create new tab (named...)"
+    ))
+    rows.append((
+        {"op": "create_workspace", **split_cwd_arg},
+        "run",
+        "Create new workspace"
+    ))
+    rows.append((
+        {"op": "create_workspace", **split_cwd_arg},
+        "prompt:New workspace label",
+        "Create new workspace (named...)"
+    ))
+    rows.append((
+        {"op": "rename_tab", "tab": target_tab_id},
+        "prompt:New tab label",
+        f"Rename tab ({tab_display})"
+    ))
+    rows.append((
+        {"op": "rename_workspace", "workspace": target_ws_id},
+        "prompt:New workspace label",
+        f"Rename workspace ({ws_display})"
+    ))
 
     # 6. Swap operations (when tab holds >= 2 panes)
     if pane_count >= 2:
@@ -191,6 +222,16 @@ def main():
         ))
 
     # 11. Close pane
+    rows.append((
+        {"op": "close_tab", "tab": target_tab_id},
+        f"confirm:Close tab '{tab_display}'?",
+        f"Close tab ({tab_display})"
+    ))
+    rows.append((
+        {"op": "close_workspace", "workspace": target_ws_id},
+        f"confirm:Close workspace '{ws_display}'?",
+        f"Close workspace ({ws_display})"
+    ))
     short_label = target_label[:24] if target_label else target_pane_id
     rows.append((
         {"op": "close", "pane": target_pane_id},
