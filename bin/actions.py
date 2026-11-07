@@ -10,6 +10,26 @@ import os
 import subprocess
 import sys
 
+# Every row reads "<Verb phrase>[...] [(subject)] [domain]": the verb phrase never
+# repeats the domain, "..." marks a row that asks for typed input, parentheses hold
+# only the concrete subject or value acted on, and the domain is the word to type to
+# see the whole family. Rows are emitted in this domain order.
+DOMAINS = ("pane", "tab", "workspace", "agent", "plannotator")
+
+# Herdr's plugin id is "annotate"; the tool is Plannotator, so that is the domain word
+# shown and typed. Its manifest titles are written for Herdr's own action menu, so they
+# are restated here in the palette's grammar. An action without an entry falls back to
+# its manifest title.
+PLANNOTATOR_PLUGIN_ID = "annotate"
+PLANNOTATOR_PHRASES = {
+    "capture": "Comment on selection",
+    "copy-context": "Copy annotations",
+    "copy-archive": "Copy annotations and archive",
+    "manage": "Manage annotations",
+    "open": "Review this folder",
+    "last": "Review agent's last reply",
+}
+
 def get_snapshot() -> dict:
     herdr = os.environ.get("HERDR_BIN_PATH") or "herdr"
     try:
@@ -22,6 +42,39 @@ def get_snapshot() -> dict:
     except Exception as e:
         sys.stderr.write(f"actions.py: failed to fetch snapshot: {e}\n")
         sys.exit(1)
+
+def get_plannotator_actions() -> list[tuple[str, str]]:
+    """Actions of the installed Plannotator plugin.
+
+    Read live, so uninstalling the plugin removes the rows and a new action
+    appears without touching this file. The link handler's own action is
+    skipped: it needs a Ctrl-clicked file:// link as its context.
+    """
+    herdr = os.environ.get("HERDR_BIN_PATH") or "herdr"
+    try:
+        raw = subprocess.check_output(
+            [herdr, "plugin", "action", "list"],
+            stderr=subprocess.DEVNULL,
+            text=True
+        )
+        actions = json.loads(raw)["result"]["actions"]
+    except Exception:
+        return []
+
+    found = []
+    for action in actions:
+        if action.get("plugin_id") != PLANNOTATOR_PLUGIN_ID:
+            continue
+        action_id = action.get("action_id")
+        if not action_id or action_id == "open-link":
+            continue
+        found.append((action_id, action.get("title") or action_id))
+
+    order = list(PLANNOTATOR_PHRASES)
+    return sorted(
+        found,
+        key=lambda pair: order.index(pair[0]) if pair[0] in order else len(order)
+    )
 
 def main():
     if len(sys.argv) < 2 or not sys.argv[1].strip():
@@ -95,12 +148,12 @@ def main():
     rows.append((
         {"op": "split", "pane": target_pane_id, "direction": "right", **split_cwd_arg},
         "run",
-        "Split right"
+        "Split right [pane]"
     ))
     rows.append((
         {"op": "split", "pane": target_pane_id, "direction": "down", **split_cwd_arg},
         "run",
-        "Split down"
+        "Split down [pane]"
     ))
 
     # 2. Sibling tabs in the same workspace
@@ -111,14 +164,14 @@ def main():
         rows.append((
             {"op": "move_tab", "pane": target_pane_id, "tab": st_id},
             "run",
-            f"Move to tab: {st_label}"
+            f"Move to tab ({st_label}) [pane]"
         ))
 
     # 3. Move to new tab
     rows.append((
         {"op": "new_tab", "pane": target_pane_id},
         "run",
-        "Move to new tab"
+        "Move to new tab [pane]"
     ))
 
     # 4. Other workspaces
@@ -129,199 +182,226 @@ def main():
         rows.append((
             {"op": "move_workspace", "pane": target_pane_id, "workspace": ow_id},
             "run",
-            f"Move to workspace: {ow_label}"
+            f"Move to workspace ({ow_label}) [pane]"
         ))
 
     # 5. Move to new workspace
     rows.append((
         {"op": "new_workspace", "pane": target_pane_id},
         "run",
-        "Move to new workspace"
+        "Move to new workspace [pane]"
     ))
     # 6. Tab & Workspace management
     rows.append((
         {"op": "create_tab", "workspace": target_ws_id, **split_cwd_arg},
         "run",
-        "Create new tab"
+        "Create [tab]"
     ))
     rows.append((
         {"op": "create_tab", "workspace": target_ws_id, **split_cwd_arg},
         "prompt:New tab label",
-        "Create new tab (named...)"
+        "Create... [tab]"
     ))
     rows.append((
         {"op": "create_workspace", **split_cwd_arg},
         "run",
-        "Create new workspace"
+        "Create [workspace]"
     ))
     rows.append((
         {"op": "create_workspace", **split_cwd_arg},
         "prompt:New workspace label",
-        "Create new workspace (named...)"
+        "Create... [workspace]"
     ))
     rows.append((
         {"op": "rename_tab", "tab": target_tab_id},
         "prompt:New tab label",
-        f"Rename tab ({tab_display})"
+        f"Rename... ({tab_display}) [tab]"
     ))
     rows.append((
         {"op": "rename_workspace", "workspace": target_ws_id},
         "prompt:New workspace label",
-        f"Rename workspace ({ws_display})"
+        f"Rename... ({ws_display}) [workspace]"
     ))
 
     if is_git_repo:
         rows.append((
             {"op": "worktree_create", "cwd": target_cwd},
             "prompt:Branch name for worktree",
-            "Create Git worktree space..."
+            "Create Git worktree... [workspace]"
         ))
     # 6. Swap operations (when tab holds >= 2 panes)
     if pane_count >= 2:
         rows.append((
             {"op": "swap", "pane": target_pane_id, "direction": "left"},
             "run",
-            "Swap left"
+            "Swap left [pane]"
         ))
         rows.append((
             {"op": "swap", "pane": target_pane_id, "direction": "right"},
             "run",
-            "Swap right"
+            "Swap right [pane]"
         ))
         rows.append((
             {"op": "swap", "pane": target_pane_id, "direction": "up"},
             "run",
-            "Swap up"
+            "Swap up [pane]"
         ))
         rows.append((
             {"op": "swap", "pane": target_pane_id, "direction": "down"},
             "run",
-            "Swap down"
+            "Swap down [pane]"
         ))
         rows.append((
             {"op": "resize", "pane": target_pane_id, "direction": "right", "amount": 0.1},
             "run",
-            "Resize: widen split (+10%)"
+            "Resize wider (+10%) [pane]"
         ))
         rows.append((
             {"op": "resize", "pane": target_pane_id, "direction": "left", "amount": 0.1},
             "run",
-            "Resize: narrow split (-10%)"
+            "Resize narrower (-10%) [pane]"
         ))
         rows.append((
             {"op": "resize", "pane": target_pane_id, "direction": "down", "amount": 0.1},
             "run",
-            "Resize: expand height (+10%)"
+            "Resize taller (+10%) [pane]"
         ))
         rows.append((
             {"op": "resize", "pane": target_pane_id, "direction": "up", "amount": 0.1},
             "run",
-            "Resize: shrink height (-10%)"
+            "Resize shorter (-10%) [pane]"
         ))
 
     # 7. Zoom toggle
     rows.append((
         {"op": "zoom", "pane": target_pane_id},
         "run",
-        "Toggle zoom"
+        "Toggle zoom [pane]"
     ))
 
     # 8. Rename pane
     rows.append((
         {"op": "rename", "pane": target_pane_id},
         "prompt:New pane label",
-        "Rename pane"
+        "Rename... [pane]"
     ))
 
     # 9. Agent controls (if agent detected in this pane)
     if agent_name:
         rows.append((
             {"op": "agent_keys", "pane": target_pane_id, "keys": ["ctrl+c"]},
-            "run",
-            f"Agent: interrupt ({agent_name})"
+            f"confirm:Interrupt {agent_name} and drop its current work?",
+            f"Interrupt ({agent_name}) [agent]"
         ))
         rows.append((
             {"op": "agent_get", "pane": target_pane_id},
             "show",
-            f"Agent: status & info ({agent_name})"
+            f"Status & info ({agent_name}) [agent]"
         ))
     else:
         rows.append((
             {"op": "agent_start", "pane": target_pane_id, "kind": "omp"},
             "run",
-            "Launch agent: omp"
+            "Launch omp [agent]"
         ))
         rows.append((
             {"op": "agent_start", "pane": target_pane_id, "kind": "claude"},
             "run",
-            "Launch agent: claude"
+            "Launch claude [agent]"
         ))
         rows.append((
             {"op": "agent_start", "pane": target_pane_id, "kind": "pi"},
             "run",
-            "Launch agent: pi"
+            "Launch pi [agent]"
+        ))
+
+    # 9b. Plannotator actions (terminal annotations and document review)
+    for action_id, title in get_plannotator_actions():
+        phrase = PLANNOTATOR_PHRASES.get(action_id) or title[:1].upper() + title[1:]
+        rows.append((
+            {
+                "op": "plugin_action",
+                "plugin": PLANNOTATOR_PLUGIN_ID,
+                "action": action_id,
+                "pane": target_pane_id,
+            },
+            "run",
+            f"{phrase} [plannotator]"
         ))
 
     # Process control signals
     rows.append((
         {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+c"]},
-        "run",
-        "Send Ctrl+C (Interrupt)"
+        f"confirm:Interrupt whatever is running in '{target_label[:24]}'?",
+        "Send Ctrl+C interrupt [pane]"
     ))
     rows.append((
         {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+d"]},
-        "run",
-        "Send Ctrl+D (EOF)"
+        f"confirm:Send EOF to '{target_label[:24]}'? A shell exits and the pane closes",
+        "Send Ctrl+D EOF [pane]"
     ))
     rows.append((
         {"op": "send_keys", "pane": target_pane_id, "keys": ["ctrl+l"]},
         "run",
-        "Clear terminal screen"
+        "Clear screen [pane]"
     ))
 
     # 10. Copy utilities
     rows.append((
         {"op": "copy", "value": target_pane_id},
         "show",
-        f"Copy pane ID ({target_pane_id})"
+        f"Copy id ({target_pane_id}) [pane]"
     ))
     if target_cwd:
         rows.append((
             {"op": "copy", "value": target_cwd},
             "show",
-            f"Copy working directory ({target_cwd})"
+            f"Copy directory ({target_cwd}) [pane]"
         ))
     rows.append((
         {"op": "copy_terminal", "pane": target_pane_id, "source": "visible"},
         "show",
-        "Copy visible terminal screen"
+        "Copy visible screen [pane]"
     ))
     rows.append((
         {"op": "copy_terminal", "pane": target_pane_id, "lines": 50},
         "show",
-        "Copy terminal history (last 50 lines)"
+        "Copy history (last 50 lines) [pane]"
+    ))
+    rows.append((
+        {"op": "copy_terminal", "pane": target_pane_id},
+        "prompt:Number of history lines",
+        "Copy history... [pane]"
     ))
 
     # 11. Close pane
     rows.append((
         {"op": "close_tab", "tab": target_tab_id},
         f"confirm:Close tab '{tab_display}'?",
-        f"Close tab ({tab_display})"
+        f"Close ({tab_display}) [tab]"
     ))
     rows.append((
         {"op": "close_workspace", "workspace": target_ws_id},
         f"confirm:Close workspace '{ws_display}'?",
-        f"Close workspace ({ws_display})"
+        f"Close ({ws_display}) [workspace]"
     ))
     short_label = target_label[:24] if target_label else target_pane_id
     rows.append((
         {"op": "close", "pane": target_pane_id},
         f"confirm:Close pane '{short_label}'?",
-        "Close pane"
+        "Close [pane]"
     ))
 
-    # Print rows to stdout
-    for spec, mode, display in rows:
+    # Print rows to stdout, grouped by domain. Sorting is stable, so each domain keeps
+    # the order it was built in: create, move, inspect, destroy.
+    def domain_rank(row) -> int:
+        display = row[2]
+        for index, domain in enumerate(DOMAINS):
+            if display.endswith(f"[{domain}]"):
+                return index
+        return len(DOMAINS)
+
+    for spec, mode, display in sorted(rows, key=domain_rank):
         spec_json = json.dumps(spec, separators=(",", ":"))
         # Ensure display has no literal tabs
         clean_display = display.replace("\t", " ")

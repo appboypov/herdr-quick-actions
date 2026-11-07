@@ -13,6 +13,7 @@ Exit codes:
 import argparse
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -99,6 +100,11 @@ def handle_copy_terminal(spec: dict, input_text: str | None) -> str:
     if source:
         args.extend(["--source", source])
     lines = spec.get("lines")
+    typed = (input_text or "").strip()
+    if typed:
+        if not typed.isdigit() or int(typed) < 1:
+            raise ExecutionError(f"'{typed}' is not a line count", code=2)
+        lines = int(typed)
     if lines:
         args.extend(["--lines", str(lines)])
 
@@ -264,6 +270,50 @@ def handle_close_workspace(spec: dict, input_text: str | None) -> str:
     run_herdr(["workspace", "close", ws_id])
     return f"Closed workspace {ws_id}"
 
+def handle_plugin_action(spec: dict, input_text: str | None) -> str:
+    """Invokes another plugin's action after this popup is gone.
+
+    Herdr allows one popup at a time, so an action that opens its own popup
+    (a Plannotator editor, the manager, a review pane) is rejected while the
+    palette is still up. The invocation is detached, waits for the palette's
+    open marker to disappear, restores focus to the target pane so pane-context
+    actions see the right pane, and only then invokes.
+    """
+    plugin_id = spec["plugin"]
+    action_id = spec["action"]
+    pane_id = spec.get("pane")
+
+    state_dir = os.environ.get("HERDR_PLUGIN_STATE_DIR") or os.environ.get("TMPDIR") or "/tmp"
+    marker = os.path.join(state_dir, "quick-actions.open")
+    request_py = os.path.join(BIN_DIR, "request.py")
+
+    steps = [
+        f"for _ in $(seq 1 60); do [ -e {shlex.quote(marker)} ] || break; sleep 0.05; done",
+        "sleep 0.05",
+    ]
+    if pane_id:
+        focus_params = json.dumps({"pane_id": pane_id}, separators=(",", ":"))
+        steps.append(
+            f"{shlex.quote(sys.executable)} {shlex.quote(request_py)} pane.focus {shlex.quote(focus_params)}"
+        )
+    steps.append(
+        f"{shlex.quote(HERDR_BIN)} plugin action invoke {shlex.quote(action_id)} --plugin {shlex.quote(plugin_id)}"
+    )
+    script = " >/dev/null 2>&1; ".join(steps) + " >/dev/null 2>&1"
+
+    try:
+        subprocess.Popen(
+            ["bash", "-c", script],
+            start_new_session=True,
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception as e:
+        raise ExecutionError(f"Failed to invoke {plugin_id}.{action_id}: {e}", code=1)
+
+    return f"Invoked {plugin_id}.{action_id}"
+
 OPS = {
     "split": handle_split,
     "zoom": handle_zoom,
@@ -288,6 +338,7 @@ OPS = {
     "rename_workspace": handle_rename_workspace,
     "close_tab": handle_close_tab,
     "close_workspace": handle_close_workspace,
+    "plugin_action": handle_plugin_action,
 }
 
 def main():
